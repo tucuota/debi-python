@@ -1,16 +1,16 @@
-# Implementación de TuCuota en Python
+# Implementación de debi en Python
 
 
-En este ejemplo mostramos cómo agregar pagos y suscripciones a través del checkout de TuCuota.
+En este ejemplo mostramos cómo agregar pagos y suscripciones a través del checkout de debi.
 Más información en nuestra documentación:
-https://tucuota.com/docs
+https://debi.pro/docs
 
-Hará falta sacar un token de acceso en https://sandbox.tucuota.com/dashboard/developers y ponerlo como variable de entorno `TC_API_KEY`
-Para activar las notificaciones por webhook, en la misma url agregar una dirección webhook y la variable de entorno `TC_API_WEBHOOK_SECRET`
+Hará falta sacar un token de acceso en https://debi-test.pro/dashboard/developers y ponerlo como variable de entorno `DEBI_API_KEY`
+Para activar las notificaciones por webhook, en la misma url agregar una dirección webhook y la variable de entorno `DEBI_API_WEBHOOK_SECRET`
 
 ```bash
-export TC_API_KEY=........
-export TC_API_WEBHOOK_SECRET=....
+export debi_api_KEY=........
+export debi_api_WEBHOOK_SECRET=....
 ```
 
 
@@ -19,10 +19,10 @@ Tarjeta para hacer pruebas en sandbox:
 - 5447651834106668
 
 Rutas
-- /tucuota/payment
-- /tucuota/subscription
-- /tucuota/callback
-- /tucuota/webhooks (POST)
+- /debi/payment
+- /debi/subscription
+- /debi/callback
+- /debi/webhooks (POST)
 
 
 ## Requerimientos

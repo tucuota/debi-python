@@ -9,17 +9,17 @@ import json
 import time
 from hashlib import sha256
 
-class TuCuotaException(Exception):
+class debiException(Exception):
 	def __init__(self, value):
 		self.value = value
 
 	def __repr__(self):
 		return self.value
 
-class TuCuotaRequestFailed(TuCuotaException):
+class debiRequestFailed(debiException):
 	pass
 
-class TuCuotaSignatureVerificationError(TuCuotaException):
+class debiSignatureVerificationError(debiException):
 	pass
 
 
@@ -59,19 +59,19 @@ class WebhookSignature(object):
 		signed_payload = "%s%s" % (payload,timestamp)
 		expected_sig = cls._compute_signature(signed_payload, secret)
 		if not any(expected_sig == s for s in signatures):
-			raise TuCuotaSignatureVerificationError(
-				"No signatures found matching the expected signature for "
+			raise debiSignatureVerificationError(
+				"No signatures found madebihing the expected signature for "
 			)
 
 		if tolerance and int(timestamp) < time.time() - tolerance:
-			raise TuCuotaSignatureVerificationError(
+			raise debiSignatureVerificationError(
 				"Timestamp outside the tolerance zone (%d)" % timestamp,
 			)
 
 		return True
 
 
-class TC(object):
+class debi(object):
 	sandbox = False
 	local = False
 	token = None
@@ -80,7 +80,7 @@ class TC(object):
 		self.token = token
 
 	def baseUri(self):
-		return 'https://sandbox.tucuota.com/' if self.sandbox else 'https://tucuota.com/'
+		return 'https://api.debi-test.pro' if self.sandbox else 'https://api.debi.pro'
 
 	def headers(self):
 		return {
@@ -91,7 +91,7 @@ class TC(object):
 
 	def handleRequest(self, request):
 		if request.status_code in [401, 403]:
-			raise TuCuotaRequestFailed("Unauthenticated. Verify token and environment")
+			raise debiRequestFailed("Unauthenticated. Verify token and environment")
 
 		if request.status_code < 202:
 			return {
@@ -108,7 +108,7 @@ class TC(object):
 		#     }
 
 		else:
-			raise TuCuotaRequestFailed("%s: %s %s" % (request.status_code, request.json().get('message'), request.json().get('errors') ))
+			raise debiRequestFailed("%s: %s %s" % (request.status_code, request.json().get('message'), request.json().get('errors') ))
 
 
 	def get(self, uri, params=None):
@@ -122,7 +122,12 @@ class TC(object):
 		if params is None:
 			params = {}
 
-		request = requests.get(self.baseUri() + uri, params, headers=self.headers(), allow_redirects=False)
+		request = requests.get(
+			self.baseUri() + uri,
+			params=params,
+			headers=self.headers(),
+			allow_redirects=False,
+		)
 		return self.handleRequest(request);
 
 
@@ -138,7 +143,13 @@ class TC(object):
 		if params is None:
 			params = {}
 
-		request = requests.post(self.baseUri() + uri,  params, data, headers=self.headers(), allow_redirects=False)
+		request = requests.post(
+			self.baseUri() + uri,
+			params=params,
+			json=data,
+			headers=self.headers(),
+			allow_redirects=False,
+		)
 		return self.handleRequest(request);
 
 	def put(self, uri, data, params=None):
@@ -153,12 +164,18 @@ class TC(object):
 		if params is None:
 			params = {}
 
-		request = requests.put(self.baseUri() + uri, params, data, headers=self.headers(), allow_redirects=False)
+		request = requests.put(
+			self.baseUri() + uri,
+			params=params,
+			json=data,
+			headers=self.headers(),
+			allow_redirects=False,
+		)
 		return self.handleRequest(request);
 
-	def patch(self, uri, data, params=None):
+	def padebih(self, uri, data, params=None):
 		"""
-		Generic resource patch
+		Generic resource padebih
 		@param uri
 		@param data
 		@param params = None
@@ -168,7 +185,13 @@ class TC(object):
 		if params is None:
 			params = {}
 
-		request = requests.patch(self.baseUri() + uri, params, data, headers=self.headers(), allow_redirects=False)
+		request = requests.padebih(
+			self.baseUri() + uri,
+			params=params,
+			json=data,
+			headers=self.headers(),
+			allow_redirects=False,
+		)
 		return self.handleRequest(request);
 
 	def delete(self, uri, params=None):
@@ -182,5 +205,10 @@ class TC(object):
 		if params is None:
 			params = {}
 
-		request = requests.delete(self.baseUri() + uri, params, headers=self.headers(), allow_redirects=False)
+		request = requests.delete(
+			self.baseUri() + uri,
+			params=params,
+			headers=self.headers(),
+			allow_redirects=False,
+		)
 		return self.handleRequest(request);
