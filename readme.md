@@ -9,8 +9,8 @@ Hará falta sacar un token de acceso en https://debi-test.pro/dashboard/develope
 Para activar las notificaciones por webhook, en la misma url agregar una dirección webhook y la variable de entorno `DEBI_API_WEBHOOK_SECRET`
 
 ```bash
-export debi_api_KEY=........
-export debi_api_WEBHOOK_SECRET=....
+export DEBI_API_KEY=........
+export DEBI_API_WEBHOOK_SECRET=....
 ```
 
 
@@ -30,4 +30,12 @@ Rutas
 - Flask
 
 ## Instalación
-`pip install -r requirements.txt`
+Usa el script `venv.sh` desde la carpeta del proyecto para crear el venv e instalar dependencias:
+```bash
+source venv.sh
+```
+
+Si ya tienes venv activo, puedes instalar manualmente:
+```bash
+pip install -r requirements.txt
+```

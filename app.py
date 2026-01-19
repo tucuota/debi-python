@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request, redirect
-import debi
+import debi as debi_module
 from os import getenv
 import os
 from pathlib import Path
@@ -8,32 +8,22 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
 app = Flask(__name__)
-debi = debi.debi(getenv('DEBI_API_KEY'))
-if os.getenv("WERKZEUG_RUN_MAIN") != "true":
-	# Avoid duplicate prompt with the reloader process.
-	try:
-		DEFAULT_CUSTOMER_ID = input("DEBI_CUSTOMER_ID (customer_id para pruebas): ").strip()
-	except EOFError:
-		DEFAULT_CUSTOMER_ID = ""
-else:
-	DEFAULT_CUSTOMER_ID = ""
+client = debi_module.debi(getenv('DEBI_API_KEY'))
 intro = """
 
 En este ejemplo mostramos cómo agregar pagos y suscripciones a través del checkout de debi.
 Más información en nuestra documentación:
 https://debi.pro/docs
 
-Hará falta sacar un token de acceso en https://debi-test.pro/dashboard/developers y ponerlo como variable de entorno:
-export DEBI_API_KEY=........
+Hará falta sacar un token de acceso en https://debi-test.pro/dashboard/developers y ponerlo como variable de entorno en archivo .env:
 
 Para activar las notificaciones por webhook, en la misma url agregar una dirección webhook y la variable de entorno del código secreto
 export DEBI_API_WEBHOOK_SECRET=....
 
 Tarjeta para hacer pruebas en sandbox:
-mastercard
-5447651834106668
+4000056655665556
 
-Rutas
+Rutas para sesión tipo pago o suscripción:
 /debi/payment
 /debi/subscription
 
@@ -45,7 +35,7 @@ Webhooks para recibir notificaciones
 """
 
 def _require_api_key():
-	if not debi.token:
+	if not client.token:
 		return jsonify({
 			"error": "Missing DEBI_API_KEY environment variable.",
 			"hint": "export DEBI_API_KEY=...."
@@ -63,68 +53,61 @@ def payment():
 	missing_key = _require_api_key()
 	if missing_key:
 		return missing_key
-	debi.sandbox = True
 
 
-	customer_id = request.args.get("customer_id") or DEFAULT_CUSTOMER_ID
-	if not customer_id:
-		return jsonify({"error": "customer_id requerido. Reinicia la app y cargalo por consola o pásalo por query."}), 400
-	description = request.args.get("description") or "test123"
-	amount = request.args.get("amount") or "123"
+
+
+	# Pago directo (API /v1/sessions)
 	try:
-		amount = int(amount)
-	except ValueError:
-		return jsonify({"error": "amount must be an integer"}), 400
-
-	# Pago directo (API /v1/payments)
-	try:
-		response = debi.post('/v1/payments', {
-			'customer_id': customer_id,
-			'amount': amount, # Monto del pago
-			'description': description,
+		response = client.post('/v1/sessions', {
+			
+        	'description' : "Pago único",
+        	'success_url' : "http://127.0.0.1:5000/debi/callback", # esta uri no será visible hasta que se complete el flujo del checkout y el cliente no la verá nunca.
+			'kind': 'payment',
+			'description': 'Pago único',
+			'amount': 12000,
+        	'customer_name': "Juan Ramonda",
+        	'customer_email': "juanchoramonda@gmail.pro",
+			'metadata' : { # se pueden agregar acá cualquier tipo de metadatos. La suscripción o pagos que genere el checkout también tendrán la misma metadata
+				'course_id': 5,
+			},
 		})
-	except debi.debiRequestFailed as exc:
+	except debi_module.debiRequestFailed as exc:
 		return jsonify({"error": str(exc)}), 400
 
-	return jsonify(response)
+	uri = response.get('data', {}).get('public_uri')
+	return redirect(uri)
 
 
 @app.route('/debi/subscription')
+@app.route('/debi/sessions')
 def subscription():
 	missing_key = _require_api_key()
 	if missing_key:
 		return missing_key
-	debi.sandbox = True
 
-	customer_id = request.args.get("customer_id") or DEFAULT_CUSTOMER_ID
-	if not customer_id:
-		return jsonify({"error": "customer_id requerido. Reinicia la app y cargalo por consola o pásalo por query."}), 400
-	description = request.args.get("description") or "Curso"
-	amount = request.args.get("amount") or "125"
-	count = request.args.get("count") or "12"
-	interval_unit = request.args.get("interval_unit") or "monthly"
-	day_of_month = request.args.get("day_of_month") or "1"
-	try:
-		amount = int(amount)
-		count = int(count)
-		day_of_month = int(day_of_month)
-	except ValueError:
-		return jsonify({"error": "amount, count y day_of_month deben ser enteros"}), 400
 
-	# Suscripción directa (API /v1/subscriptions)
+
+	# Suscripción directa (API /v1/sessions)
 	try:
-		response = debi.post('/v1/subscriptions', {
-			'customer_id': customer_id,
-			'amount': amount, # Monto del pago
-			'count': count, # cantidad de repeticiones
-			'interval_unit': interval_unit,
-			'description': description,
-			'day_of_month': day_of_month,
+		response = client.post('/v1/sessions', {
+			'description' : "Suscripción",
+			'success_url' : "http://127.0.0.1:5000/debi/callback", # esta uri no será visible hasta que se complete el flujo del checkout y el cliente no la verá nunca.
+			'kind': 'subscription',
+			'description': 'Suscripción',
+			'amount': 12000,
+			'customer_name': "Juan Ramonda",
+			'customer_email': "juanchoramonda@gmail.pro",
+			'interval_unit': "monthly",
+			'metadata' : { # se pueden agregar acá cualquier tipo de metadatos. La suscripción o pagos que genere el checkout también tendrán la misma metadata
+				'course_id': 5,
+			},
 		})
-	except debi.debiRequestFailed as exc:
+	except debi_module.debiRequestFailed as exc:
 		return jsonify({"error": str(exc)}), 400
 
-	return jsonify(response)
+	uri = response.get('data', {}).get('public_uri')
+	return redirect(uri)
 
 
 @app.route('/debi/callback')
@@ -137,8 +120,8 @@ def callback():
 
 	# Created resource
 	try:
-		session = debi.get('/v1/sessions/%s' % session_id)
-	except debi.debiRequestFailed as exc:
+		session = client.get('/v1/sessions/%s' % session_id)
+	except debi_module.debiRequestFailed as exc:
 		return jsonify({"error": str(exc)}), 400
 	createdResource = session.get('data', {}).get('resource')
 
@@ -159,13 +142,13 @@ def webhooks():
 		}), 400
 
 	try:
-		event = debi.Webhook.construct_event(
+		event = debi_module.Webhook.construct_event(
 			payload, timestamp, received_sig, secret
 		)
 	except ValueError:
 		print("Error while decoding event!")
 		return "Bad payload", 400
-	except debi.debiSignatureVerificationError:
+	except debi_module.debiSignatureVerificationError:
 		print("Invalid signature!")
 		return "Bad signature", 400
 

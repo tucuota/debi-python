@@ -10,15 +10,9 @@ import debi
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_CSV = BASE_DIR / "retry_payments.csv"
+SLEEP_SECONDS = 0
 
 load_dotenv(dotenv_path=BASE_DIR / ".env")
-
-
-def _get_env_bool(key: str, default: bool) -> bool:
-	value = os.getenv(key)
-	if value is None:
-		return default
-	return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def main() -> None:
@@ -26,15 +20,13 @@ def main() -> None:
 	if not token:
 		raise SystemExit("Missing DEBI_API_KEY in .env")
 
-	csv_path = Path(os.getenv("RETRY_PAYMENTS_CSV", str(DEFAULT_CSV)))
+	csv_path = DEFAULT_CSV
 	if not csv_path.exists():
 		raise SystemExit(f"No existe el CSV: {csv_path}")
 
-	retry_template = os.getenv("DEBI_RETRY_ENDPOINT", "/v1/payments/{payment_id}/retry")
-	sleep_seconds = float(os.getenv("RETRY_SLEEP_SECONDS", "0") or "0")
+	sleep_seconds = SLEEP_SECONDS
 
 	client = debi.debi(token)
-	client.sandbox = _get_env_bool("DEBI_SANDBOX", True)
 
 	results_path = csv_path.with_name(f"{csv_path.stem}_results.csv")
 
@@ -48,7 +40,10 @@ def main() -> None:
 			if not payment_id:
 				continue
 
-			endpoint = retry_template.format(payment_id=payment_id)
+			if payment_id.lower().startswith("py"):
+				endpoint = f"/v1/payments/{payment_id}/actions/cancel"
+			else:
+				endpoint = f"/v1/payments/{payment_id}/retry"
 			status = "ok"
 			error = ""
 

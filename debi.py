@@ -78,6 +78,8 @@ class debi(object):
 
 	def __init__(self, token):
 		self.token = token
+		if token:
+			self.sandbox = token.strip().lower().startswith("sk_test")
 
 	def baseUri(self):
 		return 'https://api.debi-test.pro' if self.sandbox else 'https://api.debi.pro'
