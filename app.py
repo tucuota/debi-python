@@ -17,9 +17,6 @@ https://debi.pro/docs
 
 Hará falta sacar un token de acceso en https://debi-test.pro/dashboard/developers y ponerlo como variable de entorno en archivo .env:
 
-Para activar las notificaciones por webhook, en la misma url agregar una dirección webhook y la variable de entorno del código secreto
-export DEBI_API_WEBHOOK_SECRET=....
-
 Tarjeta para hacer pruebas en sandbox:
 4000056655665556
 
@@ -32,6 +29,7 @@ Donde se redirigen los checkouts exitosos
 
 Webhooks para recibir notificaciones
 /debi/webhooks (POST)
+
 """
 
 def _require_api_key():
@@ -126,35 +124,6 @@ def callback():
 	createdResource = session.get('data', {}).get('resource')
 
 	return jsonify(createdResource)
-
-
-@app.route("/debi/webhooks", methods=["POST"])
-def webhooks():
-
-	payload = request.data.decode("utf-8")
-	timestamp = request.headers.get("debi-Timestamp", None)
-	received_sig = request.headers.get("debi-Signature", None)
-	secret = getenv('DEBI_API_WEBHOOK_SECRET')
-	if not secret:
-		return jsonify({
-			"error": "Missing DEBI_API_WEBHOOK_SECRET environment variable.",
-			"hint": "export DEBI_API_WEBHOOK_SECRET=...."
-		}), 400
-
-	try:
-		event = debi_module.Webhook.construct_event(
-			payload, timestamp, received_sig, secret
-		)
-	except ValueError:
-		print("Error while decoding event!")
-		return "Bad payload", 400
-	except debi_module.debiSignatureVerificationError:
-		print("Invalid signature!")
-		return "Bad signature", 400
-
-	print(event)
-
-	return "", 200
 
 
 if __name__ == "__main__":
