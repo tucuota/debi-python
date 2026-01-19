@@ -1,3 +1,5 @@
+*.csv
+!*_example.csv
 .DS_Store
 .env
 .flaskenv
