@@ -41,9 +41,7 @@ def main() -> None:
 				continue
 
 			if payment_id.lower().startswith("py"):
-				endpoint = f"/v1/payments/{payment_id}/actions/cancel"
-			else:
-				endpoint = f"/v1/payments/{payment_id}/retry"
+				endpoint = f"/v1/payments/{payment_id}/actions/retry"
 			status = "ok"
 			error = ""
 
